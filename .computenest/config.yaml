@@ -1,37 +1,89 @@
 Service:
   RegionId: cn-hangzhou
   DeployType: ros
-  OperationMetadata:
-    StatusOperationConfigs:
-      - TemplateName: '单机版'
-        SupportOperations:
-          - Start
-          - Stop
-          - Restart
-    SupportBackup: true
   DeployMetadata:
+    ServiceInstanceNameRule:
+      Prefix: anything-llm
     SupplierDeployMetadata:
-      FileArtifactRelation:
-        '{{ computenest::file::aliyun-computenest_quickstart-anything-llm-docker-compose }}':
-          ArtifactId: ${Artifact.Artifact_1.ArtifactId}
-          ArtifactVersion: ${Artifact.Artifact_1.ArtifactVersion}
+      ArtifactRelation:
+        'centos_7_9_x64_20G_alibase_20240403.vhd':
+          ArtifactId: ${Artifact.EcsImage.ArtifactId}
+          ArtifactVersion: ${Artifact.EcsImage.ArtifactVersion}
     TemplateConfigs:
       - Name: 单机版
         Url: 'ros_templates/template.yaml'
-        AllowedRegions:
-          - cn-hangzhou
-          - cn-shanghai
-          - cn-beijing
   ServiceType: private
   ServiceInfo:
     Locale: zh-CN
-    ShortDescription: docker compose deploy
-    Image: 'resources/icons/service_logo.png'
+    ShortDescription: anything-llm deploy
+    Image: 'resources/icons/service_logo.jpg'
 Artifact:
-  Artifact_1:
-    ArtifactType: File
-    ArtifactName: aliyun-computenest_quickstart-anything-llm-docker-compose
+  EcsImage:
+    ArtifactType: EcsImage
+    ArtifactName: anything-llm
+    Description: anything-llm
     ArtifactProperty:
-      RegionId: cn-hangzhou
-      Url: 'resources/artifact_resources/docker_compose.tar'
-AcrImageBuilder:
+      RegionId: ${ImageBuilder.EcsImage.RegionId}
+      ImageId: ${ImageBuilder.EcsImage.SourceImageId}
+ImageBuilder:
+  EcsImage:
+    RegionId: ap-southeast-1
+    SourceImageId: aliyun_3_x64_20G_alibase_20240819.vhd
+    SystemDiskSize: 40
+    InstanceType: ecs.c6.large
+    InternetMaxBandwidthOut: 10
+    CommandType: RunShellScript
+    Timeout: 10800
+    Tags: [ ]
+    CommandContent: |-
+        #!/bin/bash
+        # 升级基础组件：
+        yum check-update
+        yum -y upgrade --security
+        yum -y upgrade-minimal
+
+        # 安装docker-ce
+        yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+        yum makecache
+        yum install -y curl git docker-ce
+        mkdir -p /etc/docker/
+        echo '{
+            "default-address-pools": [
+                {
+                    "base": "10.255.0.0/16",
+                    "size": 24
+                }
+            ]
+        }' > /etc/docker/daemon.json
+
+        prefixChinaRegion="cn-"
+        region=$(curl -s http://100.100.100.200/latest/meta-data/region-id)
+
+        if [[ ${region} == ${prefixChinaRegion}* && ${region} != "cn-hongkong" ]]; then
+          echo '{
+              "default-address-pools": [
+                  {
+                      "base": "10.255.0.0/16",
+                      "size": 24
+                  }
+              ],
+              "registry-mirrors": [
+                  "https://mirrors-ssl.aliyuncs.com/"
+              ]
+          }' > /etc/docker/daemon.json
+        fi
+
+        sudo systemctl enable --now docker.socket
+        sudo systemctl enable --now docker.service
+
+        # 安装并启动 anything-llm
+        mkdir -p /root/application/ && cd /root/application/
+        git clone https://github.com/Mintplex-Labs/anything-llm.git
+        cd anything-llm/
+        touch server/storage/anythingllm.db
+        chmod -R 777 server/storage
+        chmod -R 666 server/storage/anythingllm.db
+        cd docker/
+        cp .env.example .env && chmod -R 666 .env
+        docker compose up -d --build
+        sleep 30

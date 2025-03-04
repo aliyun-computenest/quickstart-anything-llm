@@ -1,1 +1,0 @@
-{"ServiceType":"private","AllowedRegions":["cn-hangzhou","cn-shanghai","cn-beijing"],"ArtifactSourceType":"DockerCompose","RepoName":"aliyun-computenest/quickstart-anything-llm","Arch":"EcsSingle","DockerComposeEnvPath":".env.example","RegionId":"cn-hangzhou","DockerComposeYamlPath":"docker/docker-compose.yml"}

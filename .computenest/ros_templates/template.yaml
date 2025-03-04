@@ -1,72 +1,8 @@
 ROSTemplateFormatVersion: '2015-09-01'
 Description:
   en: DockerCompose service template
-  zh-cn: DockerCompose服务模板
-Conditions:
-  CreateVpcConditions:
-    Fn::Equals:
-      - NewVPC
-      - Ref: VpcOption
+  zh-cn: DockerCompose 服务模板
 Parameters:
-  VpcOption:
-    Type: String
-    AllowedValues:
-      - NewVPC
-      - ExistingVPC
-    AssociationPropertyMetadata:
-      ValueLabelMapping:
-        NewVPC:
-          zh-cn: 新建专有网络
-          en: New VPC
-        ExistingVPC:
-          zh-cn: 已有专有网络
-          en: Existing VPC
-    Label:
-      en: Select Existing or New VPC
-      zh-cn: 选择已有/新建的专有网络
-    Required: true
-    Default: NewVPC
-  VpcCidrBlock:
-    Type: String
-    Label:
-      en: VPC CIDR IPv4 Block
-      zh-cn: 专有网络IPv4网段
-    Description:
-      zh-cn: VPC的ip地址段范围，<br>您可以使用以下的ip地址段或其子网:<br><font color='green'>[10.0.0.0/8]</font><br><font color='green'>[172.16.0.0/12]</font><br><font color='green'>[192.168.0.0/16]</font>
-      en: 'The ip address range of the VPC in the CidrBlock form; <br>You can use the following ip address ranges and their subnets: <br><font color=''green''>[10.0.0.0/8]</font><br><font color=''green''>[172.16.0.0/12]</font><br><font color=''green''>[192.168.0.0/16]</font>'
-    Default: 192.168.0.0/16
-    Required:
-      Fn::Equals:
-        - NewVPC
-        - ${VpcOption}
-    AssociationProperty: ALIYUN::VPC::VPC::CidrBlock
-    AssociationPropertyMetadata:
-      Visible:
-        Condition:
-          Fn::Equals:
-            - NewVPC
-            - ${VpcOption}
-  VSwitchCidrBlock:
-    Type: String
-    Label:
-      en: VSwitch CIDR Block
-      zh-cn: 交换机子网网段
-    Description:
-      zh-cn: 必须属于VPC的子网段。
-      en: Must belong to the subnet segment of VPC.
-    Default: 192.168.1.0/24
-    Required:
-      Fn::Equals:
-        - NewVPC
-        - ${VpcOption}
-    AssociationProperty: ALIYUN::VPC::VSwitch::CidrBlock
-    AssociationPropertyMetadata:
-      VpcCidrBlock: VpcCidrBlock
-      Visible:
-        Condition:
-          Fn::Equals:
-            - NewVPC
-            - ${VpcOption}
   PayType:
     Type: String
     Label:
@@ -132,6 +68,26 @@ Parameters:
         InstanceTypeFamily:
           - ecs.u1
           - ecs.e
+    AllowedValues:
+      - ecs.u1-c1m2.xlarge
+      - ecs.u1-c1m4.xlarge
+      - ecs.u1-c1m8.xlarge
+      - ecs.u1-c1m1.2xlarge
+      - ecs.u1-c1m2.2xlarge
+      - ecs.u1-c1m4.2xlarge
+      - ecs.u1-c1m8.2xlarge
+      - ecs.u1-c1m1.3xlarge
+      - ecs.u1-c1m2.3xlarge
+      - ecs.u1-c1m4.3xlarge
+      - ecs.u1-c1m8.3xlarge
+      - ecs.u1-c1m1.4xlarge
+      - ecs.u1-c1m2.4xlarge
+      - ecs.u1-c1m4.4xlarge
+      - ecs.u1-c1m8.4xlarge
+      - ecs.u1-c1m1.8xlarge
+      - ecs.u1-c1m2.8xlarge
+      - ecs.u1-c1m4.8xlarge
+      - ecs.u1-c1m8.8xlarge
   InstancePassword:
     NoEcho: true
     Type: String
@@ -160,17 +116,6 @@ Parameters:
       en: VPC ID
       zh-cn: 专有网络VPC实例ID
     AssociationProperty: 'ALIYUN::ECS::VPC::VPCId'
-    Required:
-      Fn::Equals:
-        - ExistingVPC
-        - ${VpcOption}
-    Default: ''
-    AssociationPropertyMetadata:
-      Visible:
-        Condition:
-          Fn::Equals:
-            - ExistingVPC
-            - ${VpcOption}
   VSwitchId:
     Type: String
     Label:
@@ -178,51 +123,17 @@ Parameters:
       zh-cn: 交换机实例ID
     Default: ''
     AssociationProperty: 'ALIYUN::ECS::VSwitch::VSwitchId'
-    Required:
-      Fn::Equals:
-        - ExistingVPC
-        - ${VpcOption}
     AssociationPropertyMetadata:
       VpcId: VpcId
       ZoneId: ZoneId
-      Visible:
-        Condition:
-          Fn::Equals:
-            - ExistingVPC
-            - ${VpcOption}
 Resources:
-  # 新建vpc
-  EcsVpc:
-    Type: ALIYUN::ECS::VPC
-    Condition: CreateVpcConditions
-    Properties:
-      VpcName:
-        Ref: ALIYUN::StackName
-      CidrBlock:
-        Ref: VpcCidrBlock
-  # 新建vswitch
-  EcsVSwitch:
-    Condition: CreateVpcConditions
-    Type: ALIYUN::ECS::VSwitch
-    Properties:
-      VSwitchName:
-        Ref: ALIYUN::StackName
-      VpcId:
-        Ref: EcsVpc
-      ZoneId:
-        Ref: ZoneId
-      CidrBlock:
-        Ref: VSwitchCidrBlock
   SecurityGroup:
     Type: ALIYUN::ECS::SecurityGroup
     Properties:
       SecurityGroupName:
         Ref: ALIYUN::StackName
       VpcId:
-        Fn::If:
-          - CreateVpcConditions
-          - Ref: EcsVpc
-          - Ref: VpcId
+        Ref: VpcId
       SecurityGroupIngress:
         - PortRange: 3001/3001
           Priority: 1
@@ -240,20 +151,14 @@ Resources:
       Period:
         Ref: PayPeriod
       VpcId:
-        Fn::If:
-          - CreateVpcConditions
-          - Ref: EcsVpc
-          - Ref: VpcId
+        Ref: VpcId
       VSwitchId:
-        'Fn::If':
-          - CreateVpcConditions
-          - Ref: EcsVSwitch
-          - Ref: VSwitchId
+        Ref: VSwitchId
       ZoneId:
         Ref: ZoneId
       SecurityGroupId:
         Ref: SecurityGroup
-      ImageId: "{{resolve:oos:aliyun/services/computenest/images/aliyun_3_2104_docker_compose_2_27_compute_nest}}"
+      ImageId: centos_7_9_x64_20G_alibase_20240403.vhd
       Password:
         Ref: InstancePassword
       InstanceType:
@@ -276,53 +181,23 @@ Resources:
       CommandContent:
         Fn::Sub:
           - |
-            dockerJson='{{ computenest::acr::dockerconfigjson }}'
-            decodeDockerJson=$(echo $dockerJson | base64 -d)
-            host=$(echo $decodeDockerJson | jq '.auths' | jq 'keys' | jq .[0])
-            username=$(echo $decodeDockerJson | jq ".auths.$host.username" | tr -d '"')
-            password=$(echo $decodeDockerJson | jq ".auths.$host.password" | tr -d '"')
-            host=$(echo $host | tr -d '"')
-            docker login $host --username=$username --password=$password
-
-            wget '{{ computenest::file::aliyun-computenest_quickstart-anything-llm-docker-compose }}' -O /root/application/docker_compose.tar
-            tar -xvf /root/application/docker_compose.tar -C /root/application
-
-            cat > /etc/systemd/system/docker-compose-app.service <<EOF
-            [Unit]
-            Description=Docker Compose Application Service
-            Requires=docker.service
-            After=docker.service
-
-            [Service]
-            Type=oneshot
-            RemainAfterExit=yes
-            WorkingDirectory=/root/application/docker_compose
-            ExecStart=/usr/bin/docker compose -f docker/docker-compose.yml up -d
-            ExecStop=/usr/bin/docker compose down
-            TimeoutStartSec=0
-
-            [Install]
-            WantedBy=multi-user.target
-            EOF
-
-            
-            systemctl start docker-compose-app
+            sleep 30
           - RegionId:
               Ref: ALIYUN::Region
 Outputs:
-  ServerAddress:
+  n8n:
     Description:
-      en: ServerAddress.
-      zh-cn: 访问页面。
+      zh-cn: n8n应用入口
+      en: n8n Addresses
     Value:
       Fn::Sub:
-        - http://${ServerAddress}:3001
+        - 'http://${ServerAddress}:3001'
         - ServerAddress:
             Fn::Select:
             - 0
             - Fn::GetAtt:
               - InstanceGroup
-              - PublicIps
+              - PrivateIps
 Metadata:
   ALIYUN::ROS::Interface:
     ParameterGroups:
@@ -339,11 +214,8 @@ Metadata:
           default: 资源配置
       - Parameters:
           - ZoneId
-          - VpcOption
           - VpcId
           - VSwitchId
-          - VpcCidrBlock
-          - VSwitchCidrBlock
         Label:
           default: 可用区配置
       
