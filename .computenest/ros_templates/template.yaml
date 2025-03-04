@@ -181,6 +181,8 @@ Resources:
       CommandContent:
         Fn::Sub:
           - |
+            cd /root/application/anything-llm/docker
+            docker compose up -d
             sleep 30
           - RegionId:
               Ref: ALIYUN::Region
