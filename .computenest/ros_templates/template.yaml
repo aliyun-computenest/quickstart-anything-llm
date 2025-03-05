@@ -187,10 +187,10 @@ Resources:
           - RegionId:
               Ref: ALIYUN::Region
 Outputs:
-  n8n:
+  Anything-LLA Server Address:
     Description:
-      zh-cn: n8n应用入口
-      en: n8n Addresses
+      zh-cn: Anything-LLA应用入口
+      en: Anything-LLA Server Addresses
     Value:
       Fn::Sub:
         - 'http://${ServerAddress}:3001'
