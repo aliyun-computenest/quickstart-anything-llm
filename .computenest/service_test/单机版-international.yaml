@@ -1,0 +1,7 @@
+templateName: 单机版
+regionId: ap-southeast-1
+parameters:
+  PayType: "PostPaid"
+  EcsInstanceType: "Please fill in"
+  InstancePassword: "$[iact3-auto]"
+caseId: stc-9035cb45106b4a659f61
